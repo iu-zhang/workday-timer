@@ -1,0 +1,1061 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f3efe7">
+  <meta name="description" content="选择上班打卡时间，自动计算下班打卡、订餐和打车时间。">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="打卡计算器">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+  <title>打卡时间计算器</title>
+  <style>
+    :root {
+      --paper: #f3efe7;
+      --paper-deep: #e9e2d7;
+      --ink: #1d211e;
+      --ink-soft: #69675f;
+      --line: rgba(37, 40, 35, 0.12);
+      --white: #fffdf8;
+      --orange: #df603f;
+      --orange-soft: #f5d2c4;
+      --green: #295e50;
+      --green-soft: #dbe9e1;
+      --gold: #b97821;
+      --gold-soft: #f6e5c9;
+      --shadow: 0 24px 60px rgba(57, 49, 38, 0.10);
+      --radius: 26px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      min-height: 100dvh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 4%, rgba(199, 221, 207, 0.78), transparent 28rem),
+        radial-gradient(circle at 93% 9%, rgba(244, 203, 181, 0.68), transparent 30rem),
+        linear-gradient(145deg, #f7f3ec 0%, var(--paper) 52%, #eee8dd 100%);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.2;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.14'/%3E%3C/svg%3E");
+      mix-blend-mode: multiply;
+    }
+
+    button,
+    input { font: inherit; }
+
+    button { -webkit-tap-highlight-color: transparent; }
+
+    button:focus-visible,
+    input:focus-visible {
+      outline: 3px solid rgba(223, 96, 63, 0.38);
+      outline-offset: 3px;
+    }
+
+    .shell {
+      position: relative;
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      padding: 28px clamp(20px, 4vw, 48px) 30px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: clamp(38px, 7vw, 68px);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      color: #343b36;
+      font-size: 13px;
+      font-weight: 650;
+      letter-spacing: 0.09em;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 27px;
+      height: 27px;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--ink);
+      color: var(--white);
+    }
+
+    .brand-mark svg { width: 14px; height: 14px; }
+
+    .today {
+      color: var(--ink-soft);
+      font-size: 13px;
+      font-weight: 520;
+      letter-spacing: 0.02em;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(310px, 0.82fr) minmax(430px, 1.18fr);
+      align-items: start;
+      gap: clamp(38px, 6vw, 76px);
+    }
+
+    .intro-panel {
+      padding-top: 12px;
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 18px;
+      color: var(--orange);
+      font-size: 11px;
+      font-weight: 760;
+      letter-spacing: 0.17em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 26px;
+      height: 2px;
+      border-radius: 99px;
+      background: currentColor;
+    }
+
+    h1 {
+      max-width: 570px;
+      margin: 0;
+      font-size: clamp(42px, 5.2vw, 64px);
+      font-weight: 720;
+      line-height: 1.06;
+      letter-spacing: -0.052em;
+    }
+
+    h1 .accent {
+      color: var(--orange);
+      background: linear-gradient(transparent 76%, var(--orange-soft) 76%, var(--orange-soft) 94%, transparent 94%);
+    }
+
+    .intro {
+      max-width: 420px;
+      margin: 22px 0 0;
+      color: var(--ink-soft);
+      font-size: 15.5px;
+      line-height: 1.75;
+    }
+
+    .time-card {
+      margin-top: 34px;
+      padding: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.76);
+      border-radius: var(--radius);
+      background: rgba(255, 253, 248, 0.68);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .field-label {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--ink-soft);
+      font-size: 12px;
+      font-weight: 680;
+      letter-spacing: 0.08em;
+    }
+
+    .time-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .time-input-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+    }
+
+    #startTime {
+      display: block;
+      width: 100%;
+      min-width: 0;
+      margin: 0;
+      padding: 0 0 5px;
+      border: 0;
+      border-bottom: 2px solid var(--ink);
+      border-radius: 0;
+      color: var(--ink);
+      background: transparent;
+      font-family: "SF Mono", "DIN Alternate", "Roboto Mono", ui-monospace, monospace;
+      font-size: clamp(50px, 6vw, 66px);
+      font-weight: 680;
+      line-height: 1;
+      letter-spacing: -0.06em;
+      font-variant-numeric: tabular-nums;
+      cursor: pointer;
+    }
+
+    #startTime::-webkit-calendar-picker-indicator {
+      width: 25px;
+      height: 25px;
+      margin-left: 8px;
+      opacity: 0.45;
+      cursor: pointer;
+    }
+
+    #startTime::-webkit-datetime-edit { padding: 0; }
+    #startTime::-webkit-datetime-edit-fields-wrapper { padding: 0; }
+
+    .now-button {
+      flex: 0 0 auto;
+      padding: 11px 15px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.75);
+      font-size: 12.5px;
+      font-weight: 650;
+      cursor: pointer;
+      transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
+    }
+
+    .now-button:hover {
+      border-color: rgba(37, 40, 35, 0.28);
+      background: #fff;
+      transform: translateY(-1px);
+    }
+
+    .now-button:active { transform: translateY(0); }
+
+    .quick-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 19px;
+    }
+
+    .quick-button {
+      padding: 8px 12px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      color: var(--ink-soft);
+      background: rgba(29, 33, 30, 0.055);
+      font-family: "SF Mono", "DIN Alternate", ui-monospace, monospace;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      cursor: pointer;
+      transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
+    }
+
+    .quick-button:hover {
+      color: var(--ink);
+      background: rgba(29, 33, 30, 0.09);
+    }
+
+    .quick-button[aria-pressed="true"] {
+      border-color: rgba(223, 96, 63, 0.28);
+      color: #a64027;
+      background: var(--orange-soft);
+    }
+
+    .time-hint {
+      margin: 13px 0 0;
+      color: #8a867d;
+      font-size: 11.5px;
+      line-height: 1.5;
+    }
+
+    .rule-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 13px;
+      margin-top: 22px;
+      padding: 16px 0 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .rule-icon {
+      display: grid;
+      flex: 0 0 auto;
+      width: 28px;
+      height: 28px;
+      place-items: center;
+      border-radius: 9px;
+      color: var(--green);
+      background: var(--green-soft);
+    }
+
+    .rule-icon svg { width: 15px; height: 15px; }
+
+    .rule-card strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .rule-card p {
+      margin: 0;
+      color: var(--ink-soft);
+      font-size: 11.5px;
+      line-height: 1.6;
+    }
+
+    .results-panel { min-width: 0; }
+
+    .results-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 15px;
+      margin: 2px 3px 16px;
+    }
+
+    .results-heading h2 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 720;
+      letter-spacing: -0.01em;
+    }
+
+    .results-heading span {
+      color: #858178;
+      font-size: 10.5px;
+      letter-spacing: 0.04em;
+    }
+
+    .results {
+      display: grid;
+      gap: 13px;
+    }
+
+    .result-card {
+      position: relative;
+      overflow: hidden;
+      padding: 23px 25px 20px;
+      border: 1px solid rgba(255, 255, 255, 0.74);
+      border-radius: var(--radius);
+      background: rgba(255, 253, 248, 0.76);
+      box-shadow: 0 15px 40px rgba(63, 55, 44, 0.075);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .result-card::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      pointer-events: none;
+      background: radial-gradient(circle, var(--glow) 0%, transparent 68%);
+      transform: translate(30%, -44%);
+      opacity: 0.8;
+    }
+
+    .result-card.offwork {
+      --glow: rgba(244, 192, 157, 0.23);
+      color: #f8f4ea;
+      border-color: rgba(255, 255, 255, 0.08);
+      background:
+        radial-gradient(circle at 100% 0%, rgba(220, 139, 91, 0.22), transparent 38%),
+        #202823;
+      box-shadow: 0 22px 50px rgba(38, 44, 38, 0.20);
+    }
+
+    .result-card.meal {
+      --glow: rgba(212, 154, 63, 0.22);
+    }
+
+    .result-card.taxi {
+      --glow: rgba(83, 136, 111, 0.22);
+    }
+
+    .card-top,
+    .card-bottom {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .card-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12.5px;
+      font-weight: 700;
+      letter-spacing: 0.025em;
+    }
+
+    .step-number {
+      opacity: 0.44;
+      font-family: "SF Mono", "DIN Alternate", ui-monospace, monospace;
+      font-size: 10px;
+      font-weight: 560;
+      letter-spacing: 0.04em;
+    }
+
+    .day-badge {
+      padding: 5px 9px;
+      border-radius: 999px;
+      color: var(--green);
+      background: var(--green-soft);
+      font-size: 10.5px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .offwork .day-badge {
+      color: #f6c6a7;
+      background: rgba(246, 198, 167, 0.11);
+    }
+
+    .day-badge.is-next {
+      color: #a65528;
+      background: var(--gold-soft);
+    }
+
+    .offwork .day-badge.is-next {
+      color: #ffd2a7;
+      background: rgba(255, 210, 167, 0.12);
+    }
+
+    .card-middle {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 17px;
+      margin: 18px 0 17px;
+    }
+
+    .card-icon {
+      display: grid;
+      flex: 0 0 auto;
+      width: 46px;
+      height: 46px;
+      place-items: center;
+      border-radius: 15px;
+      color: var(--green);
+      background: var(--green-soft);
+    }
+
+    .result-card.offwork .card-icon {
+      color: #f6c6a7;
+      background: rgba(246, 198, 167, 0.11);
+    }
+
+    .result-card.meal .card-icon {
+      color: var(--gold);
+      background: var(--gold-soft);
+    }
+
+    .card-icon svg { width: 22px; height: 22px; }
+
+    .result-time {
+      display: inline-block;
+      font-family: "SF Mono", "DIN Alternate", "Roboto Mono", ui-monospace, monospace;
+      font-size: clamp(43px, 5.3vw, 57px);
+      font-weight: 650;
+      line-height: 0.94;
+      letter-spacing: -0.065em;
+      font-variant-numeric: tabular-nums;
+      transition: opacity 120ms ease;
+    }
+
+    .result-time.is-updating { opacity: 0.42; }
+
+    .card-bottom {
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+      color: var(--ink-soft);
+      font-size: 10.5px;
+    }
+
+    .offwork .card-bottom { border-top-color: rgba(255, 255, 255, 0.13); color: rgba(248, 244, 234, 0.56); }
+
+    .formula {
+      font-family: "SF Mono", "DIN Alternate", ui-monospace, monospace;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.01em;
+    }
+
+    .card-note { text-align: right; }
+
+    .summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-top: 15px;
+      padding: 15px 17px 15px 20px;
+      border: 1px solid var(--line);
+      border-radius: 19px;
+      background: rgba(255, 253, 248, 0.42);
+    }
+
+    .summary-text {
+      min-width: 0;
+      color: var(--ink-soft);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .summary-text strong {
+      display: block;
+      margin-bottom: 2px;
+      color: var(--ink);
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+
+    #summaryLine {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .copy-button {
+      display: inline-flex;
+      flex: 0 0 auto;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 13px;
+      border: 0;
+      border-radius: 999px;
+      color: var(--white);
+      background: var(--ink);
+      font-size: 11px;
+      font-weight: 650;
+      cursor: pointer;
+      transition: transform 160ms ease, background-color 160ms ease;
+    }
+
+    .copy-button:hover { background: #343d37; transform: translateY(-1px); }
+    .copy-button:active { transform: translateY(0); }
+    .copy-button svg { width: 13px; height: 13px; }
+
+    .footer-note {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: clamp(42px, 7vw, 72px);
+      color: #8c877d;
+      font-size: 10.5px;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .footer-note svg { flex: 0 0 auto; width: 13px; height: 13px; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: max(24px, env(safe-area-inset-bottom));
+      z-index: 20;
+      padding: 10px 16px;
+      border-radius: 999px;
+      color: var(--white);
+      background: rgba(29, 33, 30, 0.93);
+      box-shadow: 0 10px 30px rgba(29, 33, 30, 0.2);
+      font-size: 11.5px;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 8px);
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
+
+    @media (max-width: 820px) {
+      .shell { padding-top: 21px; }
+      .topbar { margin-bottom: 40px; }
+      .layout { grid-template-columns: 1fr; gap: 32px; }
+      .intro-panel { padding-top: 0; }
+      h1 { font-size: clamp(40px, 11vw, 59px); }
+      .intro { margin-top: 17px; }
+      .time-card { margin-top: 26px; }
+      .results-heading { margin-top: 1px; }
+    }
+
+    @media (max-width: 480px) {
+      .shell {
+        padding-right: 17px;
+        padding-left: 17px;
+        padding-bottom: 22px;
+      }
+
+      .today { font-size: 11.5px; }
+
+      h1 { font-size: clamp(38px, 12.5vw, 52px); }
+      .intro { font-size: 13.5px; line-height: 1.65; }
+
+      .time-card {
+        padding: 20px 17px 18px;
+        border-radius: 23px;
+      }
+
+      #startTime { font-size: clamp(48px, 15vw, 59px); }
+
+      .now-button {
+        padding: 10px 12px;
+        font-size: 11.5px;
+      }
+
+      .result-card {
+        padding: 20px 19px 18px;
+        border-radius: 23px;
+      }
+
+      .result-time { font-size: clamp(41px, 13vw, 51px); }
+      .card-middle { gap: 14px; margin-top: 16px; }
+      .card-icon { width: 42px; height: 42px; border-radius: 13px; }
+      .card-icon svg { width: 20px; height: 20px; }
+      .card-bottom { font-size: 10px; }
+      .summary { padding-left: 16px; }
+      .summary-text { font-size: 10.5px; }
+      .footer-note { padding: 0 12px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="8.2"></circle>
+            <path d="M12 7.7v4.8l3.1 1.8"></path>
+          </svg>
+        </span>
+        <span>WORKDAY TIMER</span>
+      </div>
+      <div class="today" id="todayLabel">今天</div>
+    </header>
+
+    <main class="layout">
+      <section class="intro-panel" aria-labelledby="pageTitle">
+        <p class="eyebrow">下班时间，一眼算清</p>
+        <h1 id="pageTitle">打卡之后，<br><span class="accent">几点可以走？</span></h1>
+        <p class="intro">选好今天的上班打卡时间，自动算出下班、订餐和打车的时间点。</p>
+
+        <div class="time-card">
+          <label class="field-label" for="startTime">上班打卡时间</label>
+          <div class="time-row">
+            <div class="time-input-wrap">
+              <input id="startTime" type="time" value="09:00" step="60" aria-describedby="timeHint">
+            </div>
+            <button class="now-button" id="nowButton" type="button">设为现在</button>
+          </div>
+
+          <div class="quick-row" aria-label="常用上班时间">
+            <button class="quick-button" type="button" data-time="08:30" aria-pressed="false">08:30</button>
+            <button class="quick-button" type="button" data-time="09:00" aria-pressed="true">09:00</button>
+            <button class="quick-button" type="button" data-time="09:30" aria-pressed="false">09:30</button>
+            <button class="quick-button" type="button" data-time="10:00" aria-pressed="false">10:00</button>
+          </div>
+          <p class="time-hint" id="timeHint">直接输入，或点选一个常用时间。结果会实时更新。</p>
+
+          <div class="rule-card">
+            <span class="rule-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3.8v8.5l5.1 2.9"></path>
+                <circle cx="12" cy="12" r="8.6"></circle>
+              </svg>
+            </span>
+            <div>
+              <strong>计算规则</strong>
+              <p>下班 +9 小时 · 订餐 +10.5 小时 · 打车 +11.5 小时</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="results-panel" aria-labelledby="resultsTitle">
+        <div class="results-heading">
+          <h2 id="resultsTitle">今天的三个时间</h2>
+          <span>按本地时间计算</span>
+        </div>
+
+        <div class="results" id="results" aria-live="polite" aria-atomic="true">
+          <article class="result-card offwork">
+            <div class="card-top">
+              <span class="card-label"><span class="step-number">01</span>下班打卡</span>
+              <span class="day-badge" id="offworkDay">今天</span>
+            </div>
+            <div class="card-middle">
+              <span class="card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14.5 4.5H6.3a1.8 1.8 0 0 0-1.8 1.8v11.4a1.8 1.8 0 0 0 1.8 1.8h8.2"></path>
+                  <path d="M10.2 12h9.5"></path>
+                  <path d="m16.4 8.7 3.3 3.3-3.3 3.3"></path>
+                </svg>
+              </span>
+              <time class="result-time" id="offworkTime" datetime="18:00">18:00</time>
+            </div>
+            <div class="card-bottom">
+              <span class="formula" id="offworkFormula">09:00 + 9h</span>
+              <span class="card-note">工作满 9 小时</span>
+            </div>
+          </article>
+
+          <article class="result-card meal">
+            <div class="card-top">
+              <span class="card-label"><span class="step-number">02</span>订餐时间</span>
+              <span class="day-badge" id="mealDay">今天</span>
+            </div>
+            <div class="card-middle">
+              <span class="card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4.3 10.5h15.4a7.7 7.7 0 0 1-15.4 0Z"></path>
+                  <path d="M8.2 6.4c0-1.2 1-1.3 1-2.5M12 6.4c0-1.2 1-1.3 1-2.5M15.8 6.4c0-1.2 1-1.3 1-2.5"></path>
+                  <path d="M9.4 20h5.2"></path>
+                </svg>
+              </span>
+              <time class="result-time" id="mealTime" datetime="19:30">19:30</time>
+            </div>
+            <div class="card-bottom">
+              <span class="formula" id="mealFormula">09:00 + 10.5h</span>
+              <span class="card-note">可以点晚餐</span>
+            </div>
+          </article>
+
+          <article class="result-card taxi">
+            <div class="card-top">
+              <span class="card-label"><span class="step-number">03</span>打车时间</span>
+              <span class="day-badge" id="taxiDay">今天</span>
+            </div>
+            <div class="card-middle">
+              <span class="card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m5.3 10.5 1.5-3.4a2 2 0 0 1 1.8-1.2h6.8a2 2 0 0 1 1.8 1.2l1.5 3.4"></path>
+                  <path d="M4 10.5h16a1.3 1.3 0 0 1 1.3 1.3v4.3a1.3 1.3 0 0 1-1.3 1.3H4a1.3 1.3 0 0 1-1.3-1.3v-4.3A1.3 1.3 0 0 1 4 10.5Z"></path>
+                  <path d="M6.4 17.4v1.5M17.6 17.4v1.5M6.9 13.9h.1M17 13.9h.1"></path>
+                </svg>
+              </span>
+              <time class="result-time" id="taxiTime" datetime="20:30">20:30</time>
+            </div>
+            <div class="card-bottom">
+              <span class="formula" id="taxiFormula">09:00 + 11.5h</span>
+              <span class="card-note">可以叫车</span>
+            </div>
+          </article>
+        </div>
+
+        <div class="summary">
+          <div class="summary-text">
+            <strong>快速复制</strong>
+            <span id="summaryLine">09:00 上班 · 18:00 下班 · 19:30 订餐 · 20:30 打车</span>
+          </div>
+          <button class="copy-button" id="copyButton" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="8" y="8" width="11.5" height="11.5" rx="2"></rect>
+              <path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-8A2.5 2.5 0 0 0 3 6.5v8A2.5 2.5 0 0 0 5.5 17H8"></path>
+            </svg>
+            <span id="copyLabel">复制</span>
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer-note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="8.5"></circle>
+        <path d="M12 10.5v5M12 7.8h.01"></path>
+      </svg>
+      <span>超过 24:00 的结果会自动标记「（次日）」 · 时间按分钟计算</span>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">已复制到剪贴板</div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var STORAGE_KEY = "workday-timer-start-time";
+      var startInput = document.getElementById("startTime");
+      var nowButton = document.getElementById("nowButton");
+      var copyButton = document.getElementById("copyButton");
+      var copyLabel = document.getElementById("copyLabel");
+      var summaryLine = document.getElementById("summaryLine");
+      var todayLabel = document.getElementById("todayLabel");
+      var toast = document.getElementById("toast");
+      var quickButtons = Array.prototype.slice.call(document.querySelectorAll("[data-time]"));
+      var toastTimer = null;
+
+      var RULES = [
+        {
+          key: "offwork",
+          offset: 9 * 60,
+          offsetLabel: "9h",
+          time: document.getElementById("offworkTime"),
+          day: document.getElementById("offworkDay"),
+          formula: document.getElementById("offworkFormula")
+        },
+        {
+          key: "meal",
+          offset: 10.5 * 60,
+          offsetLabel: "10.5h",
+          time: document.getElementById("mealTime"),
+          day: document.getElementById("mealDay"),
+          formula: document.getElementById("mealFormula")
+        },
+        {
+          key: "taxi",
+          offset: 11.5 * 60,
+          offsetLabel: "11.5h",
+          time: document.getElementById("taxiTime"),
+          day: document.getElementById("taxiDay"),
+          formula: document.getElementById("taxiFormula")
+        }
+      ];
+
+      function pad(value) {
+        return String(value).padStart(2, "0");
+      }
+
+      function parseTime(value) {
+        var match = /^(\d{2}):(\d{2})$/.exec(value || "");
+        if (!match) return null;
+
+        var hours = Number(match[1]);
+        var minutes = Number(match[2]);
+        if (hours > 23 || minutes > 59) return null;
+
+        return {
+          hours: hours,
+          minutes: minutes,
+          total: hours * 60 + minutes,
+          text: pad(hours) + ":" + pad(minutes)
+        };
+      }
+
+      function formatMinutes(totalMinutes) {
+        var normalized = ((totalMinutes % 1440) + 1440) % 1440;
+        return pad(Math.floor(normalized / 60)) + ":" + pad(normalized % 60);
+      }
+
+      function getDayText(dayOffset) {
+        if (dayOffset === 0) return "今天";
+        if (dayOffset === 1) return "（次日）";
+        return "（+" + dayOffset + "天）";
+      }
+
+      function getDayTextForCopy(dayOffset) {
+        if (dayOffset === 0) return "";
+        if (dayOffset === 1) return "（次日）";
+        return "（+" + dayOffset + "天）";
+      }
+
+      function updateQuickButtons(startText) {
+        quickButtons.forEach(function (button) {
+          button.setAttribute("aria-pressed", button.dataset.time === startText ? "true" : "false");
+        });
+      }
+
+      function updateDayBadge(element, dayOffset) {
+        element.textContent = getDayText(dayOffset);
+        element.classList.toggle("is-next", dayOffset > 0);
+      }
+
+      function render() {
+        var start = parseTime(startInput.value);
+
+        if (!start) {
+          RULES.forEach(function (rule) {
+            rule.time.textContent = "--:--";
+            rule.time.removeAttribute("datetime");
+            rule.day.textContent = "请选择时间";
+            rule.day.classList.remove("is-next");
+            rule.formula.textContent = "等待上班时间";
+          });
+          summaryLine.textContent = "请选择一个有效的上班打卡时间";
+          updateQuickButtons("");
+          return;
+        }
+
+        var summaryParts = [start.text + " 上班"];
+
+        RULES.forEach(function (rule) {
+          var resultTotal = start.total + rule.offset;
+          var dayOffset = Math.floor(resultTotal / 1440);
+          var resultText = formatMinutes(resultTotal);
+
+          rule.time.textContent = resultText;
+          rule.time.setAttribute("datetime", resultText);
+          updateDayBadge(rule.day, dayOffset);
+          rule.formula.textContent = start.text + " + " + rule.offsetLabel;
+
+          var suffix = getDayTextForCopy(dayOffset);
+          var label = rule.key === "offwork" ? "下班" : (rule.key === "meal" ? "订餐" : "打车");
+          summaryParts.push(resultText + suffix + " " + label);
+        });
+
+        summaryLine.textContent = summaryParts.join(" · ");
+        updateQuickButtons(start.text);
+        document.title = start.text + " 上班 → " + document.getElementById("offworkTime").textContent + " 下班";
+
+        try {
+          localStorage.setItem(STORAGE_KEY, start.text);
+        } catch (error) {
+          /* localStorage may be unavailable when the file is opened directly. */
+        }
+      }
+
+      function changeToTime(value) {
+        startInput.value = value;
+        RULES.forEach(function (rule) {
+          rule.time.classList.add("is-updating");
+        });
+        render();
+        window.setTimeout(function () {
+          RULES.forEach(function (rule) {
+            rule.time.classList.remove("is-updating");
+          });
+        }, 140);
+      }
+
+      function setToNow() {
+        var now = new Date();
+        changeToTime(pad(now.getHours()) + ":" + pad(now.getMinutes()));
+      }
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add("is-visible");
+        window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(function () {
+          toast.classList.remove("is-visible");
+        }, 1800);
+      }
+
+      function fallbackCopy(text) {
+        var area = document.createElement("textarea");
+        area.value = text;
+        area.setAttribute("readonly", "");
+        area.style.position = "fixed";
+        area.style.opacity = "0";
+        document.body.appendChild(area);
+        area.select();
+        var copied = false;
+        try {
+          copied = document.execCommand("copy");
+        } catch (error) {
+          copied = false;
+        }
+        document.body.removeChild(area);
+        return copied;
+      }
+
+      function copySummary() {
+        var text = summaryLine.textContent;
+        if (!text || text.indexOf("请选择") !== -1) {
+          showToast("请先选择上班时间");
+          return;
+        }
+
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(text).then(function () {
+            showToast("已复制到剪贴板");
+            copyLabel.textContent = "已复制";
+            window.setTimeout(function () { copyLabel.textContent = "复制"; }, 1600);
+          }).catch(function () {
+            if (fallbackCopy(text)) {
+              showToast("已复制到剪贴板");
+            } else {
+              showToast("复制失败，请手动选择文字");
+            }
+          });
+        } else if (fallbackCopy(text)) {
+          showToast("已复制到剪贴板");
+          copyLabel.textContent = "已复制";
+          window.setTimeout(function () { copyLabel.textContent = "复制"; }, 1600);
+        } else {
+          showToast("复制失败，请手动选择文字");
+        }
+      }
+
+      todayLabel.textContent = new Intl.DateTimeFormat("zh-CN", {
+        month: "long",
+        day: "numeric",
+        weekday: "long"
+      }).format(new Date());
+
+      try {
+        var savedTime = localStorage.getItem(STORAGE_KEY);
+        if (savedTime && parseTime(savedTime)) {
+          startInput.value = savedTime;
+        }
+      } catch (error) {
+        /* Ignore storage access errors. */
+      }
+
+      startInput.addEventListener("input", render);
+      startInput.addEventListener("change", render);
+      nowButton.addEventListener("click", setToNow);
+      copyButton.addEventListener("click", copySummary);
+
+      quickButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+          changeToTime(button.dataset.time);
+        });
+      });
+
+      render();
+
+      if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("./sw.js").catch(function () {
+            /* The page still works if offline caching is unavailable. */
+          });
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
